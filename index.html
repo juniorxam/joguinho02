@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍎 Jogo de Matemática - Contando Frutas</title>
+    
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Comic Sans MS', 'Arial', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .container {
+            background: white; border-radius: 30px; padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 800px; width: 100%; text-align: center;
+            position: relative;
+        }
+        
+        /* Botão de som ligado/desligado no topo */
+        .botao-som {
+            position: absolute; top: 20px; right: 20px;
+            background: #f0f0f0; border: none; font-size: 1.8em;
+            width: 55px; height: 55px; border-radius: 50%; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .botao-som:hover { background: #e0e0e0; transform: scale(1.1); }
+        .botao-som.mudo { background: #ffcdd2; }
+        
+        h1 { color: #764ba2; font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { color: #888; font-size: 1.1em; margin-bottom: 30px; }
+        
+        .placar { display: flex; justify-content: space-around; margin-bottom: 30px; font-size: 1.5em; font-weight: bold; }
+        .placar-item { background: #f0f0f0; padding: 12px 25px; border-radius: 15px; }
+        .acertos { color: #4CAF50; }
+        .erros { color: #f44336; }
+        
+        /* Instrução com ícone grande para não-leitores */
+        .instrucao {
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            margin-bottom: 20px;
+        }
+        .instrucao-icone {
+            font-size: 3em;
+            animation: pular 1.5s ease-in-out infinite;
+        }
+        @keyframes pular {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .instrucao-texto { font-size: 1.3em; color: #555; font-weight: bold; }
+        
+        .frutas {
+            font-size: 4em; margin: 20px 0; min-height: 130px;
+            letter-spacing: 12px; line-height: 1.3;
+            animation: aparecer 0.5s ease-in;
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+        }
+        @keyframes aparecer { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Botão para ouvir de novo */
+        .botao-ouvir {
+            background: #2196F3; color: white; border: none;
+            padding: 12px 30px; font-size: 1.2em; font-weight: bold;
+            border-radius: 50px; cursor: pointer; margin: 5px;
+            transition: all 0.3s;
+            display: inline-flex; align-items: center; gap: 10px;
+        }
+        .botao-ouvir:hover { background: #1976D2; transform: scale(1.05); }
+        
+        .opcoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 25px 0; }
+        .botao-numero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 30px 20px;
+            font-size: 3em; font-weight: bold;
+            border-radius: 25px; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .botao-numero .emoji-bolinhas {
+            font-size: 0.35em; letter-spacing: 3px; opacity: 0.85;
+        }
+        .botao-numero:hover:not(:disabled) { transform: translateY(-5px) scale(1.05); box-shadow: 0 15px 30px rgba(102, 126, 234, 0.6); }
+        .botao-numero:disabled { opacity: 0.5; cursor: not-allowed; }
+        .botao-numero.correto {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            animation: pulse 0.6s;
+        }
+        .botao-numero.errado {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            animation: shake 0.5s;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-12px); }
+            75% { transform: translateX(12px); }
+        }
+        
+        /* Feedback visual grande */
+        .feedback-visual {
+            font-size: 6em; min-height: 100px; margin: 10px 0;
+            animation: aparecer 0.4s ease-in;
+        }
+        
+        .botao-reiniciar {
+            background: #ff9800; color: white; border: none;
+            padding: 18px 45px; font-size: 1.4em; font-weight: bold;
+            border-radius: 20px; cursor: pointer; margin-top: 20px;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 10px;
+        }
+        .botao-reiniciar:hover { background: #f57c00; transform: scale(1.05); }
+        
+        @media (max-width: 600px) {
+            .opcoes { grid-template-columns: repeat(2, 1fr); }
+            .frutas { font-size: 2.8em; letter-spacing: 6px; }
+            h1 { font-size: 1.8em; }
+            .botao-numero { font-size: 2.5em; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="botao-som" id="botao-som" title="Ligar/Desligar som">🔊</button>
+        
+        <h1>🍎 Contando Frutas 🍎</h1>
+        
+        <div class="placar">
+            <div class="placar-item acertos">✅ <span id="acertos">0</span></div>
+            <div class="placar-item erros">❌ <span id="erros">0</span></div>
+        </div>
+        
+        <!-- Instrução visual com ícone -->
+        <div class="instrucao">
+            <div class="instrucao-icone">👀</div>
+            <div class="instrucao-texto" id="instrucao-texto">Conte as frutas!</div>
+        </div>
+        
+        <div class="frutas" id="frutas"></div>
+        
+        <button class="botao-ouvir" id="botao-ouvir">🔊 Ouvir de novo</button>
+        
+        <div class="feedback-visual" id="feedback-visual"></div>
+        
+        <div class="opcoes" id="opcoes"></div>
+        
+        <button class="botao-reiniciar" id="reiniciar" style="display:none;">🔄 Jogar de novo</button>
+    </div>
+
+    <script type="py">
+from pyscript import document, window
+from pyodide.ffi import create_proxy
+import random
+import json
+
+# ===== CONFIGURAÇÕES =====
+FRUTAS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍉", "🍒", "🥝", "🍍", "🍑"]
+NOMES_FRUTAS = {
+    "🍎": "maçãs", "🍌": "bananas", "🍇": "uvas", "🍓": "morangos",
+    "🍊": "laranjas", "🍉": "melancias", "🍒": "cerejas", "🥝": "kiwis",
+    "🍍": "abacaxis", "🍑": "pêssegos"
+}
+MAX_RODADAS = 10
+
+# ===== ESTADO DO JOGO =====
+estado = {
+    "acertos": 0,
+    "erros": 0,
+    "rodada": 0,
+    "resposta_correta": 0,
+    "respondido": False,
+    "som_ligado": True,
+    "fruta_atual": "🍎",
+    "quantidade_atual": 0,
+    "bloqueado": False,  # bloqueia cliques durante fala/animação
+}
+
+# ===== ÁUDIO: WEB SPEECH API (voz) =====
+def falar(texto):
+    """Fala um texto em português brasileiro."""
+    if not estado["som_ligado"]:
+        return
+    try:
+        # Cancela falas anteriores
+        window.speechSynthesis.cancel()
+        utterance = window.SpeechSynthesisUtterance.new(texto)
+        utterance.lang = "pt-BR"
+        utterance.rate = 0.9   # um pouco mais devagar para crianças
+        utterance.pitch = 1.2  # voz mais aguda/amigável
+        utterance.volume = 1.0
+        window.speechSynthesis.speak(utterance)
+    except Exception as e:
+        print("Erro ao falar:", e)
+
+
+# ===== ÁUDIO: SONS DE ACERTO/ERRO (Web Audio API) =====
+def tocar_som(tipo):
+    """Toca som de acerto (alegre) ou erro (triste)."""
+    if not estado["som_ligado"]:
+        return
+    try:
+        audio_ctx = window.AudioContext.new()
+        agora = audio_ctx.currentTime
+
+        if tipo == "acerto":
+            # Melodia ascendente alegre: Dó - Mi - Sol
+            notas = [523.25, 659.25, 783.99]  # C5, E5, G5
+        elif tipo == "erro":
+            # Melodia descendente triste: Sol - Mi - Dó grave
+            notas = [392.00, 329.63, 261.63]
+        else:
+            notas = [440]
+
+        for i, freq in enumerate(notas):
+            osc = audio_ctx.createOscillator()
+            gain = audio_ctx.createGain()
+            osc.type = "sine"
+            osc.frequency.value = freq
+            osc.connect(gain)
+            gain.connect(audio_ctx.destination)
+
+            inicio = agora + (i * 0.15)
+            fim = inicio + 0.15
+            gain.gain.setValueAtTime(0.0, inicio)
+            gain.gain.linearRampToValueAtTime(0.3, inicio + 0.02)
+            gain.gain.linearRampToValueAtTime(0.0, fim)
+
+            osc.start(inicio)
+            osc.stop(fim)
+    except Exception as e:
+        print("Erro som:", e)
+
+
+# ===== INTERFACE =====
+def atualizar_placar():
+    document.getElementById("acertos").innerText = str(estado["acertos"])
+    document.getElementById("erros").innerText = str(estado["erros"])
+
+
+def mostrar_feedback(emoji, cor):
+    el = document.getElementById("feedback-visual")
+    el.innerText = emoji
+    el.style.color = cor
+
+
+def limpar_feedback():
+    document.getElementById("feedback-visual").innerText = ""
+
+
+def gerar_opcoes(correta):
+    """Gera 4 opções próximas do valor correto, garantindo valores >= 1."""
+    opcoes = {correta}
+    tentativas = 0
+    while len(opcoes) < 4 and tentativas < 50:
+        delta = random.choice([-3, -2, -1, 1, 2, 3])
+        candidato = correta + delta
+        if candidato >= 1 and candidato <= 15:
+            opcoes.add(candidato)
+        tentativas += 1
+    # Se ainda não temos 4, preenche com valores aleatórios
+    while len(opcoes) < 4:
+        opcoes.add(random.randint(1, 15))
+    lista = list(opcoes)
+    random.shuffle(lista)
+    return lista
+
+
+def criar_botao(numero):
+    btn = document.createElement("button")
+    btn.className = "botao-numero"
+    btn.setAttribute("data-numero", str(numero))
+
+    # Número grande
+    span_num = document.createElement("span")
+    span_num.innerText = str(numero)
+    btn.appendChild(span_num)
+
+    # Bolinhas visuais abaixo do número (ajuda visual)
+    span_bolinhas = document.createElement("span")
+    span_bolinhas.className = "emoji-bolinhas"
+    span_bolinhas.innerText = "●" * numero if numero <= 10 else "●" * 10
+    btn.appendChild(span_bolinhas)
+
+    def ao_clicar(event, n=numero, b=btn):
+        verificar_resposta(n, b)
+
+    btn.addEventListener("click", create_proxy(ao_clicar))
+    return btn
+
+
+def verificar_resposta(numero, botao):
+    if estado["respondido"] or estado["bloqueado"]:
+        return
+
+    estado["respondido"] = True
+    estado["bloqueado"] = True
+    correta = estado["resposta_correta"]
+
+    # Desabilita todos os botões
+    for b in document.querySelectorAll(".botao-numero"):
+        b.disabled = True
+
+    if numero == correta:
+        estado["acertos"] += 1
+        botao.className = "botao-numero correto"
+        mostrar_feedback("⭐", "#FFD700")
+        tocar_som("acerto")
+        # Fala confirmando o número
+        falar("Isso! " + str(correta) + "! Muito bem!")
+    else:
+        estado["erros"] += 1
+        botao.className = "botao-numero errado"
+        # Destaca a resposta correta
+        for b in document.querySelectorAll(".botao-numero"):
+            if b.getAttribute("data-numero") == str(correta):
+                b.className = "botao-numero correto"
+        mostrar_feedback("❌", "#f44336")
+        tocar_som("erro")
+        falar("Ops! A resposta é " + str(correta) + ". Tente a próxima!")
+
+    atualizar_placar()
+    estado["rodada"] += 1
+
+    # Próxima rodada ou fim
+    if estado["rodada"] >= MAX_RODADAS:
+        window.setTimeout(create_proxy(finalizar_jogo), 2800)
+    else:
+        window.setTimeout(create_proxy(nova_rodada), 2800)
+
+
+def nova_rodada():
+    estado["respondido"] = False
+    estado["bloqueado"] = False
+    limpar_feedback()
+
+    # Sorteia fruta e quantidade (1 a 10)
+    fruta = random.choice(FRUTAS)
+    quantidade = random.randint(1, 10)
+    estado["resposta_correta"] = quantidade
+    estado["fruta_atual"] = fruta
+    estado["quantidade_atual"] = quantidade
+
+    # Mostra as frutas
+    el_frutas = document.getElementById("frutas")
+    el_frutas.innerHTML = ""
+    for _ in range(quantidade):
+        span = document.createElement("span")
+        span.innerText = fruta
+        el_frutas.appendChild(span)
+
+    # Cria botões
+    opcoes = gerar_opcoes(quantidade)
+    container = document.getElementById("opcoes")
+    container.innerHTML = ""
+    for num in opcoes:
+        container.appendChild(criar_botao(num))
+
+    # Fala a pergunta (com um pequeno delay para não cortar o som anterior)
+    nome_fruta = NOMES_FRUTAS.get(fruta, "frutas")
+    window.setTimeout(
+        create_proxy(lambda: falar("Quantas " + nome_fruta + " você vê?")),
+        600
+    )
+
+
+def finalizar_jogo():
+    estado["bloqueado"] = True
+    total = estado["acertos"] + estado["erros"]
+
+    if estado["acertos"] >= 8:
+        emoji = "🏆"
+        fala = "Parabéns! Você acertou " + str(estado["acertos"]) + " de " + str(total) + "! Você é incrível!"
+    elif estado["acertos"] >= 5:
+        emoji = "🌟"
+        fala = "Muito bem! Você acertou " + str(estado["acertos"]) + " de " + str(total) + ". Continue assim!"
+    else:
+        emoji = "💪"
+        fala = "Bom trabalho! Você acertou " + str(estado["acertos"]) + " de " + str(total) + ". Vamos tentar de novo?"
+
+    mostrar_feedback(emoji, "#FFD700")
+    document.getElementById("frutas").innerHTML = "<span>🎊</span><span>🎉</span><span>🎊</span>"
+    document.getElementById("opcoes").innerHTML = ""
+    document.getElementById("reiniciar").style.display = "inline-flex"
+
+    tocar_som("acerto")
+    falar(fala)
+
+
+def reiniciar(event=None):
+    estado["acertos"] = 0
+    estado["erros"] = 0
+    estado["rodada"] = 0
+    estado["respondido"] = False
+    estado["bloqueado"] = False
+
+    atualizar_placar()
+    document.getElementById("reiniciar").style.display = "none"
+    limpar_feedback()
+    nova_rodada()
+
+
+def alternar_som(event=None):
+    estado["som_ligado"] = not estado["som_ligado"]
+    botao = document.getElementById("botao-som")
+    if estado["som_ligado"]:
+        botao.innerText = "🔊"
+        botao.classList.remove("mudo")
+        falar("Som ligado!")
+    else:
+        botao.innerText = "🔇"
+        botao.classList.add("mudo")
+        window.speechSynthesis.cancel()
+
+
+def ouvir_de_novo(event=None):
+    if estado["bloqueado"]:
+        return
+    nome_fruta = NOMES_FRUTAS.get(estado["fruta_atual"], "frutas")
+    falar("Quantas " + nome_fruta + " você vê?")
+
+
+# ===== INICIALIZAÇÃO =====
+document.getElementById("reiniciar").addEventListener("click", create_proxy(reiniciar))
+document.getElementById("botao-som").addEventListener("click", create_proxy(alternar_som))
+document.getElementById("botao-ouvir").addEventListener("click", create_proxy(ouvir_de_novo))
+
+atualizar_placar()
+nova_rodada()
+    </script>
+</body>
+</html>
